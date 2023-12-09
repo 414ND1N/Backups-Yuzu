@@ -1,6 +1,6 @@
 import datetime
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QTableWidget, QTableWidgetItem, QVBoxLayout, QPushButton
+from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QTableWidget, QTableWidgetItem, QVBoxLayout, QPushButton, QMessageBox
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt
 import shutil
@@ -323,7 +323,6 @@ class VentanaApp(QMainWindow):
         archivo_juegos_guardados = ruta_destino + "/juegos_guardados.txt"
 
         # Crear o abrir archivo con resumen de los juegos guardados
-        # Crear o abrir archivo con resumen de los juegos guardados
         with open(archivo_juegos_guardados, "a+") as archivo:
             juegos_registrados = set()
 
@@ -355,7 +354,16 @@ class VentanaApp(QMainWindow):
                     archivo.write(f"{juego} : {id_juego}  -> {fecha}\n")
 
             archivo.close()
-                
+        
+        # Mostrar mensaje de finalización de los respaldos
+        if juegos_guardados:
+            mensaje = "Se han creado los siguientes respaldos:\n"
+            for juego, id_juego in juegos_guardados.items():
+                mensaje += f"{juego} : {id_juego}\n"
+            QMessageBox.information(self, "Copia generada", mensaje)
+        else:
+            QMessageBox.warning(self, "Copia generada", "No se ha creado ningún respaldo")
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
