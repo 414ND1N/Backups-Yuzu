@@ -15,6 +15,8 @@ class VentanaApp(QMainWindow):
 
         # Datos imporntantes
         self.ruta_nand = ""
+        self.ruta_game_titles = "./game_titles.txt"
+        self.ruta_app_dirs = "./app_dirs.txt"
         self.subcarpetas_saves = "/user/save/0000000000000000/6E02850167B8D24D2B5825C75B5EED33/"
 
         # Colores
@@ -64,6 +66,10 @@ class VentanaApp(QMainWindow):
         boton_crear_backup = QPushButton('Crear Backup', self)
         boton_crear_backup.clicked.connect(self.crear_backup)
 
+        # Botón para configurar la nand
+        boton_crear_nand = QPushButton('Configurar carpeta nand', self)
+        boton_crear_nand.clicked.connect(self.configurar_ruta_nand)
+
         # Botón configuracion game tittles
         boton_ver_ids = QPushButton('Ver IDs Juegos', self)
         boton_ver_ids.clicked.connect(self.abrir_game_titles)
@@ -73,7 +79,7 @@ class VentanaApp(QMainWindow):
         boton_ver_directorio.clicked.connect(self.abrir_app_dirs)
 
         # Estilo de los botones
-        for boton in [boton_seleccionar_todos, boton_crear_backup, boton_ver_ids, boton_ver_directorio]:
+        for boton in [boton_seleccionar_todos, boton_crear_backup, boton_crear_nand, boton_ver_ids, boton_ver_directorio]:
             boton.setFixedSize(430, 30)
             boton.setStyleSheet(f"background-color: {color_botones}; color: {color_texto}; font-size: {14}px; border-radius: {3}px;")
             boton.enterEvent = lambda event, boton=boton, color_hover=color_botones_hover: self.cambiar_estilo(boton, color_hover, color_texto_blanco, 14, 3, True)
@@ -83,6 +89,7 @@ class VentanaApp(QMainWindow):
         # Tooltip de los botones
         boton_seleccionar_todos.setToolTip("Marcar o desmarcar todos los juegos")
         boton_crear_backup.setToolTip("Crear un respaldo de los juegos seleccionados")
+        boton_crear_nand.setToolTip("Configurar la ruta de la nand (necesaria para leer los saves)")
         boton_ver_ids.setToolTip("Ver los IDs de los juegos registrados")
         boton_ver_directorio.setToolTip("Ver los directorios de los juegos registrados")
 
@@ -91,8 +98,9 @@ class VentanaApp(QMainWindow):
         layout_botones_arriba.addWidget(boton_seleccionar_todos)
 
         # Layout botones abajo - arriba
-        layout_botones_abajo_a = QHBoxLayout()
+        layout_botones_abajo_a = QVBoxLayout()
         layout_botones_abajo_a.addWidget(boton_crear_backup)
+        layout_botones_abajo_a.addWidget(boton_crear_nand)
 
         # Layout botones abajo - abajo
         layout_botones_abajo_ab = QHBoxLayout()
@@ -124,8 +132,31 @@ class VentanaApp(QMainWindow):
     # Manejo de la interfaz
     def logica_app(self):
         
-        # Obtener las rutas
+        # Crear los archivos base
+        if not os.path.isfile(self.ruta_game_titles): # Si no existe el archivo se crea
+            self.crear_plantilla_game_titles()
+        
+        if not os.path.isfile(self.ruta_app_dirs): # Si no existe el archivo se crea
+            self.crear_plantilla_app_dirs()
+
+        # Obtener la ruta nand
         self.obtener_ruta_nand()
+
+        if self.ruta_nand == "": # Si no se ha configurado la ruta de la nand
+            self.configurar_ruta_nand()
+
+        # Rellenar la tabla
+        self.rellenar_tabla()
+
+    def rellenar_tabla(self):
+
+        if self.ruta_nand == "": # Si no se ha configurado la ruta de la nand
+            return
+
+        print("Rellenando tabla ...")
+
+        # Limpiar la tabla
+        self.tabla_juegos.setRowCount(0)
 
         #Lista de juegos
         juegos = self.obtener_game_titles()
@@ -212,51 +243,105 @@ class VentanaApp(QMainWindow):
         else:
             boton.setStyleSheet(f"background-color: {color}; color: {color_texto}; font-size: {font_size}px; border-radius: {border_radius}px;")
 
+    def crear_plantilla_game_titles(self):
+        
+        # Crear el archivo
+        print("Creando archivo de game tittles ...")
+        juegos_backup = {
+            "Super Smash Bros. Ultimate": "01006A800016E000",
+            "Mario Kart 8 Deluxe": "0100152000022000",
+            "Luigi's Mansion 3": "0100DCA0064A6000",
+            "Mario + Rabbids Kingdom Battle": "010067300059A000",
+            "Mario Party Superstars": "01006FE013472000",
+            "Mario Strikers: Battle League": "010019401051C000",
+            "Metroid Dread": "010093801237C000",
+            "Minecraft Legends": "01007C6012CC8000",
+            "New Super Mario Bros. U Deluxe": "0100EA80032EA000",
+            "Pikmin 4": "0100B7C00933A000",
+            "Splatoon 3": "0100C2500FC20000",
+            "Super Mario 3D World + Bowser's Fury": "010028600EBDA000",
+            "Super Mario Bros. Wonder": "010015100B514000",
+            "Super Mario Odyssey": "0100000000010000",
+            "The Legend of Zelda: Breath of the Wild": "01007EF00011E000",
+            "The Legend of Zelda: Link's Awakening": "01006BB00C6F0000",
+            "The Legend of Zelda: Skyward Sword HD": "01002DA013484000",
+            "The Legend of Zelda: Tears of the Kingdom": "0100F2C0115B6000"
+        }
+
+        # Escribir en el archivo
+        with open(self.ruta_game_titles, "w") as archivo:
+            for juego, id_juego in juegos_backup.items():
+                archivo.write(f"{juego} = {id_juego}\n")
+            archivo.close()
+        
+        print("Se ha creado el archivo de game tittles")
+
+    def crear_plantilla_app_dirs(self):
+        # Crear el archivo
+        print("Creando archivo de rutas ...")
+        archivo_rutas = open("app_dirs.txt", "w")
+
+        # Escribir en el archivo
+    
+        archivo_rutas.write("# Aqui se encuentra la configuracion de las rutas de la instalaciónd de YUZU \n\n")
+        archivo_rutas.write("# Ruta donde se encuentra la nand del emulador, necesario para poder obtener las copias de seguridad\n")
+        archivo_rutas.write("# La ruta en en la opción: emulacion > configurar > Sistema > Sistema de archivos > NAND\n")
+        archivo_rutas.write("NAND_PATH = \"\"")
+        archivo_rutas.close()
+
+        print("Se ha creado el archivo de rutas")
+
+    def configurar_ruta_nand(self):
+
+        QMessageBox.warning(
+            self,
+            "Ruta de la NAND",
+            "Para encontrar la ruta Abre el emulador, ve a\nemulacion > configurar > Sistema > Sistema de archivos > NAND"
+        )
+
+        # Obtener la ruta de la carpeta nand
+        nueva_ruta = QFileDialog.getExistingDirectory(self, 'Seleccionar carpeta de la NAND', '.')
+        print(nueva_ruta)
+        self.ruta_nand = nueva_ruta
+
+        # Verificar que la ruta termina con la carpeta nand
+        if not self.ruta_nand.lower().endswith("nand") or not os.path.isdir(self.ruta_nand):
+            QMessageBox.warning(
+                self,
+                "Ruta no válida",
+                "La ruta seleccionada no es la correcta"
+            )
+            return
+
+        if self.ruta_nand == "":
+            QMessageBox.warning(
+                self,
+                "Ruta no válida",
+                "La ruta no se ha guardado correctamente"
+            )
+            return
+        
+        # Actualizar la ruta en el archivo
+        with open('app_dirs.txt', 'w') as archivo:
+            archivo.write("# Aqui se encuentra la configuracion de las rutas de la instalaciónd de YUZU \n\n")
+            archivo.write("# Ruta donde se encuentra la nand del emulador, necesario para poder obtener las copias de seguridad\n")
+            archivo.write("# La ruta en en la opción: emulacion > configurar > Sistema > Sistema de archivos > NAND\n")
+            archivo.write(f"NAND_PATH = \"{ self.ruta_nand}\"")
+            archivo.close()
+
+        # Rellenar la tabla
+        self.rellenar_tabla()
+
     #  Logica de la aplicación
     def obtener_ruta_nand(self):
         
         # Verificar si existe el archivo
-        if not os.path.isfile("app_dirs.txt"): # Si no existe el archivo se crea
-            print("Creando archivo de rutas ...")
-            # Crear el archivo
-            archivo_rutas = open("app_dirs.txt", "w")
-
-            # Escribir en el archivo
-        
-            archivo_rutas.write("# Aqui se encuentra la configuracion de las rutas de la instalaciónd de YUZU \n\n")
-            archivo_rutas.write("# Ruta donde se encuentra la nand del emulador, necesario para poder obtener las copias de seguridad\n")
-            archivo_rutas.write("# Se encuentra la ruta en yuzu > emulacion > configurar > Sistema > Sistema de archivos > NAND\n")
-            archivo_rutas.write("NAND_PATH = \"\"")
-            archivo_rutas.close()
-
-        # Verificar si existe los game tittles
-        if not os.path.isfile("game_titles.txt"): # Si no existe el archivo se crea
-            print("Creando archivo de game tittles ...")
-            juegos_backup = {
-                "Super Smash Bros. Ultimate": "01006A800016E000",
-                "Mario Kart 8 Deluxe": "0100152000022000",
-                "Luigi's Mansion 3": "0100DCA0064A6000",
-                "Mario + Rabbids Kingdom Battle": "010067300059A000",
-                "Mario Party Superstars": "01006FE013472000",
-                "Mario Strikers: Battle League": "010019401051C000",
-                "Metroid Dread": "010093801237C000",
-                "Minecraft Legends": "01007C6012CC8000",
-                "New Super Mario Bros. U Deluxe": "0100EA80032EA000",
-                "Pikmin 4": "0100B7C00933A000",
-                "Splatoon 3": "0100C2500FC20000",
-                "Super Mario 3D World + Bowser's Fury": "010028600EBDA000",
-                "Super Mario Bros. Wonder": "010015100B514000",
-                "Super Mario Odyssey": "0100000000010000",
-                "The Legend of Zelda: Breath of the Wild": "01007EF00011E000",
-                "The Legend of Zelda: Link's Awakening": "01006BB00C6F0000",
-                "The Legend of Zelda: Skyward Sword HD": "01002DA013484000",
-                "The Legend of Zelda: Tears of the Kingdom": "0100F2C0115B6000"
-            }
-
-            # Escribir la lista en el archivo
-            with open("game_titles.txt", "w") as archivo:
-                for juego, id_juego in juegos_backup.items():
-                    archivo.write(f"{juego} = {id_juego}\n")
+        if not os.path.isfile(self.ruta_app_dirs): # Si no existe el archivo se crea
+            self.crear_plantilla_app_dirs()
+            
+        # Verificar si existe los game titles
+        if not os.path.isfile(self.ruta_game_titles): # Si no existe el archivo se crea
+            self.crear_plantilla_game_titles()
         
         with open('app_dirs.txt', 'r') as archivo:
             for linea in archivo:
@@ -268,30 +353,21 @@ class VentanaApp(QMainWindow):
             
             archivo.close()
             
-
-        while self.ruta_nand == "":
-            self.ruta_nand = self.obtener_ruta_desde_cuadro_dialogo()
-
-            # Verificar que la ruta termina con la carpeta nand
-            if not self.ruta_nand.endswith("nand") or not os.path.isdir(self.ruta_nand):
-                print("La ruta seleccionada no es la correcta !!")
-                continue
-
-            # Guardar la ruta en el archivo
-            with open('app_dirs.txt', 'w') as archivo:
-                archivo.write("#Aqui se encuentra la configuracion de las rutas de la instalaciónd de YUZU \n")
-                archivo.write("#Se encuentra la ruta en yuzu > emulacion > configurar > Sistema > Sistema de archivos > NAND\n")
-                archivo.write(f"NAND_PATH = \"{ self.ruta_nand}\"")
-                archivo.close()
-
-            if self.ruta_nand != "":
-                break
+        # Si no se ha configurado la ruta de la nand
+        if self.ruta_nand == "":
+            QMessageBox.warning(
+                self,
+                "Ruta de la NAND",
+                "No se ha configurado la ruta de la NAND. Por favor, configura NAND\n"
+            )
+            return
 
     def obtener_game_titles(self):
+
         juegos = {}
 
         # Leer el archivo game_titles.txt y llenar el diccionario
-        with open('game_titles.txt', 'r') as archivo:
+        with open(self.ruta_game_titles, 'r') as archivo:
             for linea in archivo:
                 partes = linea.strip().split('=')
                 if len(partes) == 2:
@@ -305,8 +381,17 @@ class VentanaApp(QMainWindow):
 
     def obtener_carpetas_a_respaladar(self):
         carpetas = []
+
+        #Si esta configurada la ruta de la nand
+        if self.ruta_nand == "":
+            QMessageBox.warning(
+                self,
+                "Ruta de la NAND",
+                "No se ha configurado la ruta de la NAND. Por favor, configura NAND\n"
+            )
+            return
+
         ruta_carpetas = self.ruta_nand + self.subcarpetas_saves
-       
 
         #Obtener las subcarpetas
         for carpeta in os.listdir(ruta_carpetas):
@@ -319,10 +404,14 @@ class VentanaApp(QMainWindow):
 
     def crear_backup(self):
         try:
-
             #Si esta configurada la ruta de la nand
             if self.ruta_nand == "":
-                self.obtener_ruta_nand()
+                QMessageBox.warning(
+                    self,
+                    "Ruta de la NAND",
+                    "No se ha configurado la ruta de la NAND. Por favor, configura NAND\n"
+                )
+                return
 
             #Si hay al menos una fila marcada, desmarcar todas
             hay_fila_marcada = False
