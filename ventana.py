@@ -1,6 +1,6 @@
 import datetime
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QTableWidget, QTableWidgetItem, QVBoxLayout, QPushButton, QMessageBox
+from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QTableWidget, QTableWidgetItem, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt
 import shutil
@@ -12,80 +12,128 @@ class VentanaApp(QMainWindow):
 
     def __init__(self, ):
         super().__init__()
-        self.inicializarUI()
-    
-    def inicializarUI(self):
+
+        # Datos imporntantes
+        self.ruta_nand = ""
+        self.subcarpetas_saves = "/user/save/0000000000000000/6E02850167B8D24D2B5825C75B5EED33/"
+
+        # Colores
+        color_fondo = "#3887BE"
+        color_texto = "#191919"
+        color_texto_blanco = "#F0ECE5"
+        color_botones = "#BF3131"
+        color_botones_hover = "#A42222"
 
         # Configuraciones de la ventana
-        self.setGeometry(100, 100, 400, 400)
         self.setWindowTitle('Backup YUZU')
 
+        # No permitir cambiar el tamaño de la ventana
+        self.setFixedSize(450, 400)
+
         # Icono de la ventana
-        icono = QIcon("images/logo.ico")  # Reemplaza con la ruta de tu propio ícono
-        self.setWindowIcon(icono)
+        self.setWindowIcon(QIcon("images/logo.ico")) # Reemplaza con la ruta de tu propio ícono
 
         # Establecer el fondo de color
-        self.setStyleSheet("background-color: #265073;")
+        self.setStyleSheet(f"background-color: {color_fondo} ;")
 
         # Crear la tabla
         self.tabla_juegos = QTableWidget(self)
         self.tabla_juegos.setColumnCount(3)
         self.tabla_juegos.setHorizontalHeaderLabels(['Nombre', 'ID', 'Guardar'])
         self.tabla_juegos.setColumnWidth(0, 200)  # Ancho de la columna 'Nombre'
-        self.tabla_juegos.setColumnWidth(1, 100)  # Ancho de la columna 'ID'
-        self.tabla_juegos.setColumnWidth(2, 50)  # Ancho de la columna 'Guardar'
+        self.tabla_juegos.setColumnWidth(1, 150)  # Ancho de la columna 'ID'
+        self.tabla_juegos.setColumnWidth(2, 30)  # Ancho de la columna 'Guardar'
+
+        # No permitir que el usuario edite los datos de la tabla
+        self.tabla_juegos.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+
+        # Ultima fila debe rellenar el espacio restante
+        self.tabla_juegos.horizontalHeader().setStretchLastSection(True)
+
+        # Estilo de la tabla
+        self.tabla_juegos.setStyleSheet(f"background-color: white; color: {color_texto}; font-size: {13}px; border: 0px;")
 
         # Llenar la tabla con datos
         self.logica_app()
 
-        # Crear un QVBoxLayout independiente
-        layout_principal = QVBoxLayout()
-        
         # Botón para seleccionar todos los checkbox
         boton_seleccionar_todos = QPushButton('Marcar/Desmarcar Todos', self)
         boton_seleccionar_todos.clicked.connect(self.seleccionar_todos)
 
-        # Agregar el botón y la tabla al layout
-        layout_principal.addWidget(boton_seleccionar_todos)
-        layout_principal.addWidget(self.tabla_juegos)
-
-        # Botón configuracion game tittles
-        boton_crear_backup = QPushButton('Ver IDs Juegos', self)
-        boton_crear_backup.clicked.connect(self.abrir_game_titles)
-        layout_principal.addWidget(boton_crear_backup)
-
-        # Botón configuracion game tittles
-        boton_crear_backup = QPushButton('Ver Directorios', self)
-        boton_crear_backup.clicked.connect(self.abrir_app_dirs)
-        layout_principal.addWidget(boton_crear_backup)
-
         # Botón para crear backup
         boton_crear_backup = QPushButton('Crear Backup', self)
         boton_crear_backup.clicked.connect(self.crear_backup)
-        layout_principal.addWidget(boton_crear_backup)
 
-        # Crear un widget central y configurar el layout principal
-        central_widget = QWidget()
+        # Botón configuracion game tittles
+        boton_ver_ids = QPushButton('Ver IDs Juegos', self)
+        boton_ver_ids.clicked.connect(self.abrir_game_titles)
+
+        # Botón configuracion game tittles
+        boton_ver_directorio = QPushButton('Ver Directorios', self)
+        boton_ver_directorio.clicked.connect(self.abrir_app_dirs)
+
+        # Estilo de los botones
+        for boton in [boton_seleccionar_todos, boton_crear_backup, boton_ver_ids, boton_ver_directorio]:
+            boton.setFixedSize(430, 30)
+            boton.setStyleSheet(f"background-color: {color_botones}; color: {color_texto}; font-size: {14}px; border-radius: {3}px;")
+            boton.enterEvent = lambda event, boton=boton, color_hover=color_botones_hover: self.cambiar_estilo(boton, color_hover, color_texto_blanco, 14, 3, True)
+            boton.leaveEvent = lambda event, boton=boton, color_botones=color_botones: self.cambiar_estilo(boton, color_botones, color_texto, 14, 3, False)
+            boton.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        # Tooltip de los botones
+        boton_seleccionar_todos.setToolTip("Marcar o desmarcar todos los juegos")
+        boton_crear_backup.setToolTip("Crear un respaldo de los juegos seleccionados")
+        boton_ver_ids.setToolTip("Ver los IDs de los juegos registrados")
+        boton_ver_directorio.setToolTip("Ver los directorios de los juegos registrados")
+
+        # Layout botones arriba
+        layout_botones_arriba = QHBoxLayout()
+        layout_botones_arriba.addWidget(boton_seleccionar_todos)
+
+        # Layout botones abajo - arriba
+        layout_botones_abajo_a = QHBoxLayout()
+        layout_botones_abajo_a.addWidget(boton_crear_backup)
+
+        # Layout botones abajo - abajo
+        layout_botones_abajo_ab = QHBoxLayout()
+        layout_botones_abajo_ab.addWidget(boton_ver_ids)
+        layout_botones_abajo_ab.addWidget(boton_ver_directorio)
+
+        for boton in [boton_ver_ids, boton_ver_directorio]:
+            boton.setFixedSize(210, 30)
+
+        # Layout botones abajo
+        layout_botones_abajo = QVBoxLayout()
+        layout_botones_abajo.addLayout(layout_botones_abajo_a)
+        layout_botones_abajo.addLayout(layout_botones_abajo_ab)
+
+        # Layout principal
+        layout_principal = QVBoxLayout()
+        
+        layout_principal.addLayout(layout_botones_arriba)
+        layout_principal.addWidget(self.tabla_juegos)
+        layout_principal.addLayout(layout_botones_abajo)
+
+        # Crear un QWidget y configurar el layout principal
+        central_widget = QWidget(self)
         central_widget.setLayout(layout_principal)
 
         # Configurar el widget central de la ventana
         self.setCentralWidget(central_widget)
-        
-        self.show()
     
     # Manejo de la interfaz
     def logica_app(self):
         
         # Obtener las rutas
-        ruta_nand = self.obtener_ruta_nand()
+        self.obtener_ruta_nand()
 
         #Lista de juegos
         juegos = self.obtener_game_titles()
 
         # Lista de carpetas a respaldar
-        carpetas = self.obtener_carpetas_a_respaladar(ruta_nand)
+        carpetas = self.obtener_carpetas_a_respaladar()
         for carpeta in carpetas:
-            datos = juegos.get(carpeta, ruta_nand)
+            datos = juegos.get(carpeta, self.ruta_nand)
             self.agregar_fila_tabla(datos, carpeta)
 
     def agregar_fila_tabla(self, nombre, id_juego):
@@ -156,11 +204,16 @@ class VentanaApp(QMainWindow):
                 print(f"No se pudo abrir el archivo: {e}")
         else:
             os.system("app_dirs.txt")
+    
+    def cambiar_estilo(self, boton, color, color_texto, font_size, border_radius, hover=True):
+        if hover:
+            # Aumentar tamaño, cambiar color de fondo y color de texto
+            boton.setStyleSheet(f"background-color: {color}; color: {color_texto}; font-size: {font_size+1}px; border-radius: {border_radius}px;")
+        else:
+            boton.setStyleSheet(f"background-color: {color}; color: {color_texto}; font-size: {font_size}px; border-radius: {border_radius}px;")
 
     #  Logica de la aplicación
     def obtener_ruta_nand(self):
-
-        ruta_datos_nand = ""
         
         # Verificar si existe el archivo
         if not os.path.isfile("app_dirs.txt"): # Si no existe el archivo se crea
@@ -170,8 +223,9 @@ class VentanaApp(QMainWindow):
 
             # Escribir en el archivo
         
-            archivo_rutas.write("#Aqui se encuentra la configuracion de las rutas de la instalaciónd de YUZU \n")
-            archivo_rutas.write("#Se encuentra la ruta en yuzu > emulacion > configurar > Sistema > Sistema de archivos > NAND\n")
+            archivo_rutas.write("# Aqui se encuentra la configuracion de las rutas de la instalaciónd de YUZU \n\n")
+            archivo_rutas.write("# Ruta donde se encuentra la nand del emulador, necesario para poder obtener las copias de seguridad\n")
+            archivo_rutas.write("# Se encuentra la ruta en yuzu > emulacion > configurar > Sistema > Sistema de archivos > NAND\n")
             archivo_rutas.write("NAND_PATH = \"\"")
             archivo_rutas.close()
 
@@ -208,18 +262,18 @@ class VentanaApp(QMainWindow):
             for linea in archivo:
                 if 'NAND_PATH' in linea:
                     ruta = linea.split('=')[1].strip()  # Obtener la parte después del signo igual y eliminar espacios en blanco
-                    ruta_datos_nand = ruta.strip('"')  # Eliminar comillas si están presentes
+                    self.ruta_nand = ruta.strip('"')  # Eliminar comillas si están presentes
                     archivo.close()
                     break  # No es necesario seguir leyendo el archivo después de encontrar la línea
             
             archivo.close()
             
 
-        while ruta_datos_nand == "":
-            ruta_datos_nand = self.obtener_ruta_desde_cuadro_dialogo()
+        while self.ruta_nand == "":
+            self.ruta_nand = self.obtener_ruta_desde_cuadro_dialogo()
 
             # Verificar que la ruta termina con la carpeta nand
-            if not ruta_datos_nand.endswith("nand") or not os.path.isdir(ruta_datos_nand):
+            if not self.ruta_nand.endswith("nand") or not os.path.isdir(self.ruta_nand):
                 print("La ruta seleccionada no es la correcta !!")
                 continue
 
@@ -227,28 +281,11 @@ class VentanaApp(QMainWindow):
             with open('app_dirs.txt', 'w') as archivo:
                 archivo.write("#Aqui se encuentra la configuracion de las rutas de la instalaciónd de YUZU \n")
                 archivo.write("#Se encuentra la ruta en yuzu > emulacion > configurar > Sistema > Sistema de archivos > NAND\n")
-                archivo.write(f"NAND_PATH = \"{ ruta_datos_nand}\"")
+                archivo.write(f"NAND_PATH = \"{ self.ruta_nand}\"")
                 archivo.close()
 
-            if ruta_datos_nand != "":
+            if self.ruta_nand != "":
                 break
-
-        return ruta_datos_nand
-
-    def obtener_ruta_desde_cuadro_dialogo(self):
-        dialogo = QFileDialog()
-        dialogo.setFileMode(QFileDialog.FileMode.Directory)
-        dialogo.setOption(QFileDialog.Option.ShowDirsOnly, True)
-
-        if dialogo.exec() == QFileDialog.DialogCode.Accepted:
-            rutas_seleccionadas = dialogo.selectedFiles()
-            if rutas_seleccionadas:
-                ruta_seleccionada = rutas_seleccionadas[0]
-                print('ruta seleccionada: ',ruta_seleccionada)
-                # Puedes almacenar esta ruta en el archivo o realizar las operaciones necesarias
-                return ruta_seleccionada
-
-        return ""
 
     def obtener_game_titles(self):
         juegos = {}
@@ -266,9 +303,9 @@ class VentanaApp(QMainWindow):
 
         return juegos
 
-    def obtener_carpetas_a_respaladar(self, ruta_datos_nand):
+    def obtener_carpetas_a_respaladar(self):
         carpetas = []
-        ruta_carpetas = ruta_datos_nand + "/user/save/0000000000000000/6E02850167B8D24D2B5825C75B5EED33/"
+        ruta_carpetas = self.ruta_nand + self.subcarpetas_saves
        
 
         #Obtener las subcarpetas
@@ -281,91 +318,113 @@ class VentanaApp(QMainWindow):
         return carpetas
 
     def crear_backup(self):
-        #Preguntar por la ruta de destino
-        ruta_destino = self.obtener_ruta_desde_cuadro_dialogo()
-        if ruta_destino == "":
-            return
+        try:
 
-        juegos_guardados = {}
+            #Si esta configurada la ruta de la nand
+            if self.ruta_nand == "":
+                self.obtener_ruta_nand()
 
-        # Obtener los datos de las casiilas marcadas
-        for fila in range(self.tabla_juegos.rowCount()):
-            if self.tabla_juegos.item(fila, 2).checkState() == Qt.CheckState.Checked:
-                nombre = self.tabla_juegos.item(fila, 0).text()
-                id_juego = self.tabla_juegos.item(fila, 1).text()
+            #Si hay al menos una fila marcada, desmarcar todas
+            hay_fila_marcada = False
 
-                ruta_nand = self.obtener_ruta_nand()
+            for fila in range(self.tabla_juegos.rowCount()):
+                if self.tabla_juegos.item(fila, 2).checkState() == Qt.CheckState.Checked:
+                    hay_fila_marcada = True
+                    break
+            
+            if not hay_fila_marcada:
+                QMessageBox.warning(
+                    self,
+                    "Sin juegos seleccionados",
+                    "No se ha seleccionado ningún juego para crear el respaldo"
+                )
+                return
 
-                # Obtiene la ruta de la carpeta a respaldar
-                ruta_backup = ruta_nand + "/user/save/0000000000000000/6E02850167B8D24D2B5825C75B5EED33/" + id_juego
+            #Preguntar por la ruta de destino
+            ruta_destino = QFileDialog.getExistingDirectory(self, 'Seleccionar carpeta para saves', '.')
 
-                # Verificar que la carpeta exista
-                if not os.path.isdir(ruta_backup):
-                    print(f"La carpeta {ruta_backup} no existe")
-                    continue
+            juegos_guardados = {} # Diccionario para guardar los juegos que se han respaldado
 
-                # Crear la carpeta en la ruta de destino
-                ruta_destino_juego = ruta_destino + "/" + id_juego
+            
+            # Obtener los datos de las casiilas marcadas
+            for fila in range(self.tabla_juegos.rowCount()):
+                if self.tabla_juegos.item(fila, 2).checkState() == Qt.CheckState.Checked:
+                    nombre = self.tabla_juegos.item(fila, 0).text()
+                    id_juego = self.tabla_juegos.item(fila, 1).text()
 
-                # Copiar los archivos y carpetas (incluyen subcarpetas)
-                try:
-                    # Copiar el directorio y su contenido
-                    print(f"Creando backup de '{nombre}'")
-                    shutil.copytree(ruta_backup, ruta_destino_juego, dirs_exist_ok=True)
-                    print(f"Se ha copiado correctamente de '{ruta_backup}' a '{ruta_destino_juego}'")
-                    # Agregar el juego a la lista de juegos guardados
-                    juegos_guardados[nombre] = id_juego
-                except Exception as e:
-                    print(f"Error al copiar: {e}")
+                    # Obtiene la ruta de la carpeta a respaldar
+                    ruta_backup = self.ruta_nand + self.subcarpetas_saves + id_juego
+
+                    # Verificar que la carpeta exista
+                    if not os.path.isdir(ruta_backup):
+                        print(f"La carpeta {ruta_backup} no existe")
+                        continue
+
+                    # Crear la carpeta en la ruta de destino
+                    ruta_destino_juego = ruta_destino + "/" + id_juego
+
+                    # Copiar los archivos y carpetas (incluyen subcarpetas)
+                    try:
+                        # Copiar el directorio y su contenido
+                        print(f"Creando backup de '{nombre}'")
+                        shutil.copytree(ruta_backup, ruta_destino_juego, dirs_exist_ok=True)
+                        print(f"Se ha copiado correctamente de '{ruta_backup}' a '{ruta_destino_juego}'")
+                        # Agregar el juego a la lista de juegos guardados
+                        juegos_guardados[nombre] = id_juego
+                    except Exception as e:
+                        print(f"Error al copiar: {e}")
 
 
-        # Ruta del archivo de juegos guardados
-        archivo_juegos_guardados = ruta_destino + "/juegos_guardados.txt"
+            # Ruta del archivo de juegos guardados
+            archivo_juegos_guardados = ruta_destino + "/juegos_guardados.txt"
 
-        # Crear o abrir archivo con resumen de los juegos guardados
-        with open(archivo_juegos_guardados, "a+") as archivo:
-            juegos_registrados = set()
+            # Crear o abrir archivo con resumen de los juegos guardados
+            with open(archivo_juegos_guardados, "a+") as archivo:
+                juegos_registrados = set()
 
-            # Leer los juegos ya registrados
-            archivo.seek(0)
-            for linea in archivo:
-                partes = linea.strip().split(" : ")
-                if len(partes) == 2:
-                    juego_registrado = partes[0]
-                    juegos_registrados.add(juego_registrado)
+                # Leer los juegos ya registrados
+                archivo.seek(0)
+                for linea in archivo:
+                    partes = linea.strip().split(" : ")
+                    if len(partes) == 2:
+                        juego_registrado = partes[0]
+                        juegos_registrados.add(juego_registrado)
 
-            for juego, id_juego in juegos_guardados.items():
-                fecha = datetime.datetime.now()
-                fecha = fecha.strftime("%d/%m/%Y %H:%M")
+                for juego, id_juego in juegos_guardados.items():
+                    fecha = datetime.datetime.now()
+                    fecha = fecha.strftime("%d/%m/%Y %H:%M")
 
-                # Verificar si el juego ya está registrado
-                if juego in juegos_registrados:
-                    # Actualizar la línea si el juego ya está registrado
-                    archivo.seek(0)
-                    lineas = archivo.readlines()
-                    archivo.seek(0)
-                    archivo.truncate(0)  # Limpiar el contenido del archivo
-                    for i, linea in enumerate(lineas):
-                        if juego in linea:
-                            lineas[i] = f"{juego} : {id_juego}  -> {fecha}\n"
-                        archivo.write(lineas[i])
-                else:
-                    # Agregar el juego al final del archivo si no está registrado
-                    archivo.write(f"{juego} : {id_juego}  -> {fecha}\n")
+                    # Verificar si el juego ya está registrado
+                    if juego in juegos_registrados:
+                        # Actualizar la línea si el juego ya está registrado
+                        archivo.seek(0)
+                        lineas = archivo.readlines()
+                        archivo.seek(0)
+                        archivo.truncate(0)  # Limpiar el contenido del archivo
+                        for i, linea in enumerate(lineas):
+                            if juego in linea:
+                                lineas[i] = f"{juego} : {id_juego}  -> {fecha}\n"
+                            archivo.write(lineas[i])
+                    else:
+                        # Agregar el juego al final del archivo si no está registrado
+                        archivo.write(f"{juego} : {id_juego}  -> {fecha}\n")
 
-            archivo.close()
+                archivo.close()
+            
+            # Mostrar mensaje de finalización de los respaldos
+            if juegos_guardados:
+                mensaje = "Se han creado los siguientes respaldos:\n"
+                for juego, id_juego in juegos_guardados.items():
+                    mensaje += f"{juego} : {id_juego}\n"
+                QMessageBox.information(self, "Copia generada", mensaje)
+            else:
+                QMessageBox.warning(self, "Copia generada", "No se ha creado ningún respaldo")
         
-        # Mostrar mensaje de finalización de los respaldos
-        if juegos_guardados:
-            mensaje = "Se han creado los siguientes respaldos:\n"
-            for juego, id_juego in juegos_guardados.items():
-                mensaje += f"{juego} : {id_juego}\n"
-            QMessageBox.information(self, "Copia generada", mensaje)
-        else:
-            QMessageBox.warning(self, "Copia generada", "No se ha creado ningún respaldo")
-
+        except Exception as e:
+            print(f"Error al crear el respaldo: {e}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     ventana = VentanaApp()
+    ventana.show()
     sys.exit(app.exec())

@@ -1,3 +1,5 @@
-#Aqui se encuentra la configuracion de las rutas de la instalaciónd de YUZU 
-#Se encuentra la ruta en yuzu > emulacion > configurar > Sistema > Sistema de archivos > NAND
+# Aqui se encuentra la configuracion de las rutas de la instalaciónd de YUZU
+
+# Ruta donde se encuentra la nand del emulador, necesario para poder obtener las copias de seguridad
+# Se encuentra la ruta en yuzu > emulacion > configurar > Sistema > Sistema de archivos > NAND
 NAND_PATH = "E:/Games/yuzu/nand"
